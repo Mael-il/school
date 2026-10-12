@@ -301,14 +301,6 @@ Install the PWA from the browser’s install action after opening the HTTPS scho
 
 The packaged app includes the built PWA (`npm run package`/`npm run make` build it automatically). Set `WEB_SERVER=1` in the packaged app’s environment to run its HTTP server without opening the desktop window. To migrate an existing desktop installation, stop it, make a verified SQLite backup, then place a copy at the server host’s `complex-scolaire.sqlite` user-data path before first start; database migrations run automatically. Backups initiated in the PWA are downloaded to the browser and retained in the server’s backup directory. Restore is administrator-only and restarts the server. Web spreadsheet exports are downloaded as Excel-compatible CSV; printing uses the browser print dialog.
 
-### Render deployment
-
-The `render.yaml` Blueprint provisions the web service and PostgreSQL database, sets the initial login name to `admin`, and prompts for `WEB_ADMIN_PASSWORD` when creating a new Blueprint. Set a unique password of at least 8 characters directly in Render; do not commit it to this repository. The service uses Render's HTTPS hostname for same-origin checks and exposes `/api/health` for health checks.
-
-To reset an existing administrator password, set `WEB_ADMIN_USERNAME=admin`, set the new `WEB_ADMIN_PASSWORD`, and temporarily set `WEB_ADMIN_RESET_PASSWORD=1` in the service's Environment settings. Deploy once, confirm the log says the administrator password was reset, then remove `WEB_ADMIN_RESET_PASSWORD` and deploy again. Without this temporary flag, changing the environment variable does not alter an existing account.
-
-This Blueprint intentionally uses Render's free plans for evaluation. The free PostgreSQL database expires after 30 days, and the free web service may spin down when idle; use paid plans before storing real school or financial data. PostgreSQL backups and restoration are managed through Render rather than the app's SQLite backup controls.
-
 ---
 
 ## Development workflow

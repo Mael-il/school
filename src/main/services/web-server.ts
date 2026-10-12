@@ -121,36 +121,6 @@ async function createUser(
   return { id: Number(result.id), username: normalized, role };
 }
 
-async function resetAdminPassword(
-  db: Kysely<Schema>,
-  username: string,
-  password: string,
-): Promise<void> {
-  const normalized = validateCredentials(username, password);
-  const admin = await db
-    .selectFrom('web_users')
-    .select('id')
-    .where('username', '=', normalized)
-    .where('role', '=', 'admin')
-    .where('disabled', '=', 0)
-    .executeTakeFirst();
-  if (!admin) {
-    throw new Error(
-      `Aucun compte administrateur actif nommé « ${normalized} » à réinitialiser.`,
-    );
-  }
-
-  const salt = randomBytes(16).toString('hex');
-  await db
-    .updateTable('web_users')
-    .set({
-      password_hash: passwordHash(password, salt).toString('hex'),
-      password_salt: salt,
-    })
-    .where('id', '=', admin.id)
-    .execute();
-}
-
 function userFromRow(row: Record<string, unknown>): WebUser {
   return {
     id: Number(row.id),
@@ -431,16 +401,6 @@ export async function startWebServer(
     }
     await createUser(database.db, username, password, 'admin');
     console.info('[web] Initial administrator account created.');
-  } else if (process.env.WEB_ADMIN_RESET_PASSWORD === '1') {
-    const username = process.env.WEB_ADMIN_USERNAME ?? 'admin';
-    const password = process.env.WEB_ADMIN_PASSWORD;
-    if (!password) {
-      throw new Error(
-        'WEB_ADMIN_PASSWORD est requis pour réinitialiser le compte administrateur.',
-      );
-    }
-    await resetAdminPassword(database.db, username, password);
-    console.info('[web] Administrator password reset from environment.');
   }
 
   const webRoot = options.webRoot ?? path.resolve(process.cwd(), 'dist/web');
@@ -709,7 +669,8 @@ export async function startWebServer(
         if (request.method === 'POST' && url.pathname === '/api/backup') {
           if (!backupService) {
             sendJson(response, 501, {
-              error: 'La sauvegarde PostgreSQL est gérée par Render.',
+              error:
+                'Les sauvegardes PostgreSQL doivent être effectuées avec les outils du fournisseur de base de données.',
             });
             return;
           }
@@ -737,7 +698,7 @@ export async function startWebServer(
           if (!database.sqlite) {
             sendJson(response, 501, {
               error:
-                'La restauration PostgreSQL doit être effectuée via Render.',
+                'La restauration PostgreSQL doit être effectuée avec les outils du fournisseur de base de données.',
             });
             return;
           }
